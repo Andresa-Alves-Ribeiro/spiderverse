@@ -4,7 +4,7 @@
 
 Este é o repositório do projeto Spider-Verse que consiste em uma aplicação interativa inspirada no universo do Homem-Aranha, usando as principais stacks front-end: React, Next.js 13, a biblioteca Framer Motion, Sass e TypeScript para criar um projeto visual incrível e de alta performance.
 
-![web](https://github.com/Andresa-Alves-Ribeiro/spiderverse/assets/94997593/a2a964e0-fca2-48a8-b202-4284a8e4304e)
+![web](https://github.com/Andresa-Alves-Ribeiro/spiderverse/assets/94997593/465e133a-73c8-47ab-9cf4-39331d1b1759)
 
 
 [spiderverse.webm](https://github.com/Andresa-Alves-Ribeiro/spiderverse/assets/94997593/2d9dc509-6c65-4991-a4af-242047f84939)
