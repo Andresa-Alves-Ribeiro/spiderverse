@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { AnimatePresence, motion } from "framer-motion";
 
 import HeroDetails from "../HeroDetails";
 import HeroPicture from "../HeroPicture";
@@ -8,6 +9,12 @@ import HeroPicture from "../HeroPicture";
 import styles from "./carousel.module.scss";
 
 import { IHeroData } from "@/interfaces/heroes";
+
+enum enPosition {
+  FRONT = 0,
+  MIDDLE = 1,
+  BACK = 2,
+}
 
 interface IProps {
   heroes: IHeroData[];
@@ -20,7 +27,7 @@ export default function Carousel({ heroes, activeId }: IProps) {
 
   // Armazena o item ativo do carrossel
   const [activeIndex, setActiveIndex] = useState(
-    heroes.findIndex((hero) => hero.id === activeId)
+    heroes.findIndex((hero) => hero.id === activeId) - 1
   );
 
   // Altera o visibleItems sempre que o activeIndex é alterado
@@ -43,6 +50,31 @@ export default function Carousel({ heroes, activeId }: IProps) {
     setVisibleItems(visibleItems);
   }, [heroes, activeIndex]);
 
+  // Altera o fundo da página de acordo com o herói selecionado
+  useEffect(() => {
+    const htmlEl = document.querySelector("html");
+
+    if (!htmlEl || !visibleItems) {
+      return;
+    }
+
+    const currentHeroId = visibleItems[1].id;
+    htmlEl.style.background = `url("/spiders/${currentHeroId}-background.png")`;
+    htmlEl.classList.add("hero-page");
+
+    // remove a classe quando o componente é desmontado
+    return () => {
+      htmlEl.classList.remove("hero-page");
+    };
+  }, [visibleItems]);
+
+  // Altera herói ativo no carrossel
+  // +1 rotaciona no sentido horário
+  // -1 rotaciona no sentido anti-horário
+  const handleChangeActiveIndex = (newDirection: number) => {
+    setActiveIndex((prevActiveIndex) => prevActiveIndex + newDirection);
+  };
+
   if (!visibleItems) {
     return null;
   }
@@ -50,17 +82,72 @@ export default function Carousel({ heroes, activeId }: IProps) {
   return (
     <div className={styles.container}>
       <div className={styles.carousel}>
-        <div className={styles.wrapper}>
-          {visibleItems?.map((item) => (
-            <div key={item.id} className={styles.hero}>
-              <HeroPicture hero={item} />
-            </div>
-          ))}
+        <div
+          className={styles.wrapper}
+          onClick={() => handleChangeActiveIndex(1)}
+        >
+          <AnimatePresence mode="popLayout">
+            {visibleItems?.map((item, position) => (
+              <motion.div
+                key={item.id}
+                className={styles.hero}
+                transition={{ duration: 0.8 }}
+                initial={{
+                  x: -1500,
+                  scale: 0.75,
+                }}
+                animate={{ x: 0, ...getItemStyles(position) }}
+                exit={{
+                  x: 0,
+                  left: "-20%",
+                  opacity: 0,
+                  scale: 1,
+                }}
+              >
+                <HeroPicture hero={item} />
+              </motion.div>
+            ))}
+          </AnimatePresence>
         </div>
       </div>
-      <div className={styles.details}>
-        <HeroDetails data={heroes[0]} />
-      </div>
+      <motion.div
+        className={styles.details}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 1, duration: 2 }}
+      >
+        <HeroDetails data={visibleItems[enPosition.MIDDLE]} />
+      </motion.div>
     </div>
   );
 }
+
+// Estilos para o item que está visível na animação
+// Dependendo da posição do herói no carrossel
+const getItemStyles = (position: enPosition) => {
+  if (position === enPosition.FRONT) {
+    return {
+      filter: "blur(10px)",
+      scale: 1.2,
+      zIndex: 3,
+    };
+  }
+
+  if (position === enPosition.MIDDLE) {
+    return {
+      left: 300,
+      scale: 0.8,
+      top: "-10%",
+      zIndex: 2,
+    };
+  }
+
+  return {
+    filter: "blur(10px)",
+    scale: 0.6,
+    left: 160,
+    opacity: 0.8,
+    zIndex: 1,
+    top: "-20%",
+  };
+};
