@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 
 import HeroDetails from "../HeroDetails";
@@ -28,6 +28,27 @@ export default function Carousel({ heroes, activeId }: IProps) {
   // Armazena o item ativo do carrossel
   const [activeIndex, setActiveIndex] = useState(
     heroes.findIndex((hero) => hero.id === activeId) - 1
+  );
+
+  // Armazena a posição inicial, no eixo x, da interação com o carrossel
+  const [startInteractionPosition, setStartInteractionPosition] =
+    useState<number>(0);
+
+  // Som de transição
+  const transitionAudio = useMemo(() => new Audio("/songs/transition.mp3"), []);
+
+  // Voz de cada personagem
+  const voicesAudio: Record<string, HTMLAudioElement> = useMemo(
+    () => ({
+      "spider-man-616": new Audio("/songs/spider-man-616.mp3"),
+      "mulher-aranha-65": new Audio("/songs/mulher-aranha-65.mp3"),
+      "spider-man-1610": new Audio("/songs/spider-man-1610.mp3"),
+      "sp-dr-14512": new Audio("/songs/sp-dr-14512.mp3"),
+      "spider-ham-8311": new Audio("/songs/spider-ham-8311.mp3"),
+      "spider-man-90214": new Audio("/songs/spider-man-90214.mp3"),
+      "spider-man-928": new Audio("/songs/spider-man-928.mp3"),
+    }),
+    []
   );
 
   // Altera o visibleItems sempre que o activeIndex é alterado
@@ -59,7 +80,7 @@ export default function Carousel({ heroes, activeId }: IProps) {
     }
 
     const currentHeroId = visibleItems[1].id;
-    htmlEl.style.background = `url("/spiders/${currentHeroId}-background.png")`;
+    htmlEl.style.backgroundImage = `url("/spiders/${currentHeroId}-background.png")`;
     htmlEl.classList.add("hero-page");
 
     // remove a classe quando o componente é desmontado
@@ -68,11 +89,69 @@ export default function Carousel({ heroes, activeId }: IProps) {
     };
   }, [visibleItems]);
 
+  // Reproduz efeitos sonoros ao rotacionar o carrossel
+  useEffect(() => {
+    if (!visibleItems) {
+      return;
+    }
+
+    transitionAudio.play();
+    const voiceAudio = voicesAudio[visibleItems[1].id];
+
+    if (voiceAudio) {
+      voiceAudio.volume = 0.3;
+      voiceAudio?.play();
+    }
+  }, [visibleItems, transitionAudio, voicesAudio]);
+
   // Altera herói ativo no carrossel
   // +1 rotaciona no sentido horário
   // -1 rotaciona no sentido anti-horário
   const handleChangeActiveIndex = (newDirection: number) => {
     setActiveIndex((prevActiveIndex) => prevActiveIndex + newDirection);
+  };
+
+  // onDragStart (mouse): armazena a posição inicial da interação
+  const handleDragStart = (e: React.DragEvent<HTMLDivElement>) => {
+    setStartInteractionPosition(e.clientX);
+  };
+
+  // onDragEnd (mouse): armazena a posição final da interação
+  // Mexe o carrossel na direção que o usuário fez o evento de interação
+  const handleDragEnd = (e: React.DragEvent<HTMLDivElement>) => {
+    if (!startInteractionPosition) {
+      return null;
+    }
+
+    const endInteractionPosition = e.clientX;
+    const diffPosition = endInteractionPosition - startInteractionPosition;
+
+    // diffPosition > 0 => direita para esquerda
+    // diffPosition < 0 => esquerda para direita
+    const newPosition = diffPosition > 0 ? -1 : 1;
+    handleChangeActiveIndex(newPosition);
+  };
+
+  // onTouchStart (touch): armazena a posição inicial da interação
+  const handleTouchStart = (e: React.TouchEvent<HTMLDivElement>) => {
+    setStartInteractionPosition(e.touches[0].clientX);
+  };
+
+  // onTouchEnd (touch): armazena a posição final da interação
+  // Mexe o carrossel na direção que o usuário fez o evento de interação
+  const handleTouchEnd = (e: React.TouchEvent<HTMLDivElement>) => {
+    if (!startInteractionPosition) {
+      return null;
+    }
+
+    const endInteractionPosition = e.changedTouches[0].clientX;
+
+    // diffPosition > 0 => direita para esquerda
+    // diffPosition < 0 => esquerda para direita
+    const diffPosition = endInteractionPosition - startInteractionPosition;
+
+    const newPosition = diffPosition > 0 ? -1 : 1;
+    handleChangeActiveIndex(newPosition);
   };
 
   if (!visibleItems) {
@@ -84,7 +163,10 @@ export default function Carousel({ heroes, activeId }: IProps) {
       <div className={styles.carousel}>
         <div
           className={styles.wrapper}
-          onClick={() => handleChangeActiveIndex(1)}
+          onDragStart={handleDragStart}
+          onDragEnd={handleDragEnd}
+          onTouchStart={handleTouchStart}
+          onTouchEnd={handleTouchEnd}
         >
           <AnimatePresence mode="popLayout">
             {visibleItems?.map((item, position) => (
