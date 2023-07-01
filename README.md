@@ -49,7 +49,7 @@ O projeto está estruturado da seguinte forma:
 
 Você pode abrir o seguinte deploy para visualizar o projeto:
 
-
+https://spiderverse-two.vercel.app/
 
 OU
 
